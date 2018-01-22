@@ -6,6 +6,7 @@ defmodule ExVCR.Handler do
   alias ExVCR.Recorder
   alias ExVCR.Actor.Options
   alias ExVCR.Util
+  require Logger
 
   @doc """
   Get response from either server or cache.
@@ -18,11 +19,13 @@ defmodule ExVCR.Handler do
   Get response from the cache (pre-recorded cassettes).
   """
   def get_response_from_cache(request, recorder) do
+    Logger.info("#{__MODULE__}: REQUEST: #{inspect request}")
     recorder_options = Options.get(recorder.options)
     adapter = ExVCR.Recorder.options(recorder)[:adapter]
     params = adapter.generate_keys_for_request(request)
     {response, responses} = find_response(Recorder.get(recorder), params, recorder_options)
     response = adapter.hook_response_from_cache(request, response)
+    Logger.info("#{__MODULE__}: FOUND RESPONSE: #{inspect response}")
 
     case { response, stub_mode?(recorder_options) } do
       { nil, true } ->
