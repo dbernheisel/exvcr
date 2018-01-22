@@ -24,6 +24,7 @@ defmodule ExVCR.Handler do
     adapter = ExVCR.Recorder.options(recorder)[:adapter]
     params = adapter.generate_keys_for_request(request)
     {response, responses} = find_response(Recorder.get(recorder), params, recorder_options)
+    Logger.info("#{__MODULE__}: RESPONSES: #{inspect responses}")
     response = adapter.hook_response_from_cache(request, response)
     Logger.info("#{__MODULE__}: FOUND RESPONSE: #{inspect response}")
 
