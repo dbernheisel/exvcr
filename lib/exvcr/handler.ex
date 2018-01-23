@@ -25,6 +25,7 @@ defmodule ExVCR.Handler do
     recorder_options = Options.get(recorder.options)
     adapter = ExVCR.Recorder.options(recorder)[:adapter]
     params = adapter.generate_keys_for_request(request)
+    Logger.info("#{__MODULE__}: PARAMS: #{inspect params}")
     {response, responses} = find_response(Recorder.get(recorder), params, recorder_options)
     Logger.info("#{__MODULE__}: RESPONSES: #{inspect responses}")
     response = adapter.hook_response_from_cache(request, response)
@@ -64,6 +65,7 @@ defmodule ExVCR.Handler do
   defp find_response(responses, keys, recorder_options), do: find_response(responses, keys, recorder_options, [])
   defp find_response([], _keys, _recorder_options, _acc), do: {nil, nil}
   defp find_response([response|tail], keys, recorder_options, acc) do
+    Logger.info("#{__MODULE__}: RUNNING FIND_RESPONSE")
     case match_response(response, keys, recorder_options) do
       true  -> {response[:response], Enum.reverse(acc) ++ tail ++ [response]}
       false -> find_response(tail, keys, recorder_options, [response|acc])
@@ -78,6 +80,7 @@ defmodule ExVCR.Handler do
   end
 
   defp match_by_url(response, keys, recorder_options) do
+    Logger.info("#{__MODULE__}: MATCHING BY URL")
     request_url = response[:request].url
     key_url     = to_string(keys[:url]) |> ExVCR.Filter.filter_sensitive_data
 
@@ -97,14 +100,18 @@ defmodule ExVCR.Handler do
   end
 
   defp match_by_headers(response, keys, options) do
-    if has_match_requests_on(:headers, options) do
-      response[:request].headers
-      |> Enum.to_list
-      |> Util.stringify_keys
-      |> Keyword.equal?(keys[:headers])
-    else
-      true
-    end
+    Logger.info("#{__MODULE__}: MATCHING BY HEADERS")
+    match =
+      if has_match_requests_on(:headers, options) do
+        response[:request].headers
+        |> Enum.to_list
+        |> Util.stringify_keys
+        |> Keyword.equal?(keys[:headers])
+      else
+        true
+      end
+    Logger.info("#{__MODULE__}: MATCHING BY HEADERS: #{inspect match}")
+    match
   end
 
   defp parse_url(url, options) do
@@ -116,27 +123,35 @@ defmodule ExVCR.Handler do
   end
 
   defp match_by_method(head, params) do
-    if params[:method] == nil || head[:request].method == nil do
-      true
-    else
-      to_string(params[:method]) == head[:request].method
-    end
+    Logger.info("#{__MODULE__}: MATCHING BY METHOD")
+    match =
+      if params[:method] == nil || head[:request].method == nil do
+        true
+      else
+        to_string(params[:method]) == head[:request].method
+      end
+    Logger.info("#{__MODULE__}: MATCHING BY METHOD: #{inspect match}")
+    match
   end
 
   defp match_by_request_body(response, keys, recorder_options) do
-    if stub_with_non_empty_request_body?(recorder_options) || has_match_requests_on(:request_body, recorder_options) do
-      request_body = response[:request].body || response[:request].request_body
-      key_body     = keys[:request_body] |> to_string |> ExVCR.Filter.filter_sensitive_data
+    Logger.info("#{__MODULE__}: MATCHING BY REQUEST BODY")
+    match =
+      if stub_with_non_empty_request_body?(recorder_options) || has_match_requests_on(:request_body, recorder_options) do
+        request_body = response[:request].body || response[:request].request_body
+        key_body     = keys[:request_body] |> to_string |> ExVCR.Filter.filter_sensitive_data
 
-      if match = Regex.run(~r/~r\/(.+)\//, request_body) do
-        pattern = Regex.compile!(Enum.at(match, 1))
-        Regex.match?(pattern, key_body)
+        if match = Regex.run(~r/~r\/(.+)\//, request_body) do
+          pattern = Regex.compile!(Enum.at(match, 1))
+          Regex.match?(pattern, key_body)
+        else
+          request_body == key_body
+        end
       else
-        request_body == key_body
+        true
       end
-    else
-      true
-    end
+    Logger.info("#{__MODULE__}: MATCHING BY REQUEST BODY: #{inspect match}")
+    match
   end
 
   defp get_response_from_server(request, recorder) do
