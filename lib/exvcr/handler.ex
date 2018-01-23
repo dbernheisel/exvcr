@@ -19,7 +19,7 @@ defmodule ExVCR.Handler do
   Get response from the cache (pre-recorded cassettes).
   """
   def get_response_from_cache(request, recorder) do
-    Logger.info("#{__MODULE__}: RECORDER: #{inspect recorder}")
+    Logger.info("#{__MODULE__}: RECORDER: #{inspect Recorder.get(recorder)}")
     Logger.info("#{__MODULE__}: REQUEST: #{inspect request}")
     recorder_options = Options.get(recorder.options)
     adapter = ExVCR.Recorder.options(recorder)[:adapter]
