@@ -94,6 +94,8 @@ defmodule ExVCR.Handler do
     else
       request_url = parse_url(request_url, recorder_options)
       key_url     = parse_url(key_url, recorder_options)
+      Logger.info("#{__MODULE__}: REQUEST URL: #{inspect request_url}")
+      Logger.info("#{__MODULE__}: MATCHING BY URL: #{inspect key_url}")
 
       request_url == key_url
     end
